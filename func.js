@@ -8,49 +8,50 @@ fdk.handle(function(input){
   if (input.timeRange) {
     timeRange = input.timeRange;
   }
-  bitcoinChart.chart(timeRange)
-  	.then(link => { return link })
-  	.catch(err => { return err })
+
+  return bitcoinChart.chart(timeRange)
+  	.then(link => { 
+		return { "chart": link }
+	})
+  	.catch(err => { 
+		return { "error": err }
+	})
 })
 
-fdk.slack(function(result){
-	bitcoinChart.chart(timeRange)
-		.then(link => {
-			return {
-		        "response_type": "in_channel",
-		        "blocks" : [
-			        {
-					"type": "image",
-					"title": {
-						"type": "plain_text",
-						"text": "Current Bitcoin Price",
-						"emoji": true
-					},
-					"image_url": link,
-					"alt_text": "bitcoinprice"
-					}
-		        ]
-		    }
-		})
-		.catch(err => { 
-			return {
-		        "response_type": "in_channel",
-		        "blocks" : [
-		            {
-		                "type": "section",
-		                "text": {
-		                    "type": "mrkdwn",
-		                    "text": "Error generating chart."
-		                }
-		            }
-		        ]
-		    }
+fdk.slack(function(result) {
+	let responseType = "in_channel"
+	const blocks = []
 
+	if (!result.error) {
+		blocks.push({
+			"type": "image",
+			"title": {
+				"type": "plain_text",
+				"text": "Current Bitcoin Price",
+				"emoji": true
+			},
+			"image_url": result.chart,
+			"alt_text": "bitcoinprice"
 		})
+	} else {
+		responseType = "ephemeral"
+		blocks.push({
+			"type": "section",
+			"text": {
+				"type": "mrkdwn",
+				"text": "Error generating chart."
+			}
+		})
+	}
+
+	return {
+		"response_type": responseType,
+		"blocks": blocks
+	}
 })
 
 fdk.discord(function(result){
-	bitcoinChart.chart(timeRange)
+	return bitcoinChart.chart(timeRange)
 		.then(link => {
 		    return {
 		        "embed": {
